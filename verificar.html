@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <title>Bradken — Autorizaciones de Personal</title>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg:#f4f6f9;--sf:#ffffff;
+      --tx:#1a2332;--tx2:#5a6a7a;--tx3:#9aaabb;
+      --ac:#1e5fa8;
+      --gn:#16a34a;--gn-bg:rgba(22,163,74,.08);--gn-bd:rgba(22,163,74,.3);
+      --rd:#dc2626;--rd-bg:rgba(220,38,38,.08);--rd-bd:rgba(220,38,38,.3);
+      --am:#b45309;--am-bg:rgba(180,83,9,.08);--am-bd:rgba(180,83,9,.3);
+      --mono:'IBM Plex Mono',monospace;--sans:'IBM Plex Sans',sans-serif;
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    html,body{min-height:100vh;font-family:var(--sans);background:var(--bg);color:var(--tx)}
+    .page{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px}
+    .header{text-align:center;margin-bottom:28px}
+    .header-logo{height:70px;width:auto;display:block;margin:0 auto 10px}
+    .header-title{font-size:16px;font-weight:600;color:var(--ac);letter-spacing:.04em;margin-top:4px}
+    .result{max-width:420px;width:100%}
+    .card{border-radius:12px;padding:26px;text-align:center;border:1px solid rgba(30,95,168,0.15);background:#fff;box-shadow:0 2px 12px rgba(0,0,0,0.06)}
+    .person-name{font-size:22px;font-weight:600;margin-top:4px;color:var(--tx)}
+    .person-sub{font-size:13px;color:var(--tx2);margin-top:4px}
+    .status-badge{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:20px;font-size:13px;font-weight:500;margin:12px 0}
+    .status-badge.ok {background:var(--gn-bg);color:var(--gn);border:1px solid var(--gn-bd)}
+    .status-badge.bad{background:var(--rd-bg);color:var(--rd);border:1px solid var(--rd-bd)}
+    .status-badge.warn{background:var(--am-bg);color:var(--am);border:1px solid var(--am-bd)}
+    .hab-section{margin-top:16px;text-align:left;border-top:1px solid rgba(0,0,0,.08);padding-top:14px}
+    .hab-table{width:100%;border-collapse:collapse;font-size:12px}
+    .hab-table thead tr th{text-align:left;padding:5px 8px;font-size:10px;color:var(--tx3);font-family:var(--mono);text-transform:uppercase;border-bottom:1px solid rgba(0,0,0,.08)}
+    .hab-table tbody tr{border-bottom:1px solid rgba(0,0,0,.06)}
+    .hab-table tbody tr td{padding:7px 8px}
+    .hab-name{font-family:var(--mono);font-size:11px;color:var(--tx)}
+    .hab-date{font-size:11px;color:var(--tx2)}
+    .hab-status{display:inline-block;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:500}
+    .hab-status.ok  {background:var(--gn-bg);color:var(--gn);border:1px solid var(--gn-bd)}
+    .hab-status.bad {background:var(--rd-bg);color:var(--rd);border:1px solid var(--rd-bd)}
+    .hab-status.warn{background:var(--am-bg);color:var(--am);border:1px solid var(--am-bd)}
+    .meta{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;padding-top:12px;border-top:1px solid rgba(0,0,0,.06);text-align:left}
+    .meta-item{background:#f4f6f9;border-radius:6px;padding:6px 10px;font-size:11px;flex:1;min-width:120px}
+    .meta-label{color:var(--tx3);font-family:var(--mono);font-size:10px;text-transform:uppercase;margin-bottom:2px}
+    .meta-val{font-weight:500;color:var(--tx)}
+    .meta-val.ok{color:var(--gn)}.meta-val.bad{color:var(--rd)}.meta-val.warn{color:var(--am)}
+    .no-hab{font-size:12px;color:var(--tx2);margin-top:12px;text-align:center}
+    .error-card{border-color:rgba(220,38,38,.2)}
+    .error-title{font-size:15px;font-weight:600;color:var(--rd);margin-bottom:8px}
+    .error-sub{font-size:13px;color:var(--tx2);margin-top:6px}
+    .loading{color:var(--tx3);font-size:13px;text-align:center;padding:20px}
+    .spinner{width:32px;height:32px;border:3px solid rgba(30,95,168,.15);border-top-color:var(--ac);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 12px}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .footer{margin-top:20px;font-size:10px;color:var(--tx3);text-align:center;font-family:var(--mono);letter-spacing:.04em}
+  </style>
+</head>
+<body>
+<div class="page">
+  <div class="header">
+    <img class="header-logo" src="https://raw.githubusercontent.com/Trainingbradken2026/verificar/main/logo.png" alt="Bradken" />
+    <div class="header-title">Bradken Chilca</div>
+    <div class="header-title">Autorizaciones de Actividades Críticas</div>
+  </div>
+  <div class="result">
+    <div id="scan-live" class="loading">
+      <div class="spinner"></div>
+      Cargando datos...
+    </div>
+  </div>
+  <div class="footer">Bradken · Sistema de Control de Acceso</div>
+</div>
+<script>
+const SUPA_URL="https://pxqbwxoqjzyadlyivkop.supabase.co";
+const SUPA_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB4cWJ3eG9xanp5YWRseWl2a29wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0NDk3NDYsImV4cCI6MjA5NDAyNTc0Nn0.8PU79Wmr9XnOxWb8otvKS6JUpwY9oaO06xgWUepkbzk";
+const AUTH_TODAS=[
+  {id:"alturas",label:"Trabajo en Alturas",icon:"🧗"},
+  {id:"excavacion",label:"Excavación",icon:"⛏"},
+  {id:"caliente",label:"Trabajo en Caliente",icon:"🔥"},
+  {id:"confinados",label:"Espacios Confinados",icon:"🕳"},
+  {id:"lototo",label:"LOTOTO",icon:"🔒"},
+  {id:"izaje",label:"Izaje de Cargas",icon:"🏗"},
+  {id:"montacargas",label:"Montacargas",icon:"🚜"},
+  {id:"grua",label:"Grúa Telescópica",icon:"🏗"},
+  {id:"rigger",label:"Rigger",icon:"⛓"},
+  {id:"excavadora",label:"Excavadora",icon:"🚧"},
+  {id:"manlift",label:"Manlift",icon:"🦺"},
+  {id:"tijera",label:"Elevador de Tijera",icon:"✂"},
+];
+function dias(f){if(!f)return null;const h=new Date();h.setHours(0,0,0,0);return Math.floor((new Date(f)-h)/86400000);}
+function fmt(f){if(!f)return"—";const[y,m,d]=f.split("-");return d+"/"+m+"/"+y;}
+async function cargar(){
+  const p=new URLSearchParams(location.search);
+  const pid=p.get("id")||p.get("pid");
+  const el=document.getElementById("scan-live");
+  if(!pid){el.innerHTML='<div class="card"><div class="error-title">Verificación QR</div><p class="error-sub">Escanea el QR del casco del trabajador para ver su estado de autorizaciones.</p></div>';return;}
+  try{
+    const h={"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY};
+    const r1=await fetch(SUPA_URL+"/rest/v1/personas?id=eq."+encodeURIComponent(pid)+"&select=*",{headers:h});
+    const ps=await r1.json();
+    if(!ps||!ps.length){el.innerHTML='<div class="card error-card"><div class="error-title">ID no registrado en el sistema</div><p class="error-sub">El trabajador con ID <strong>'+pid+'</strong> no está autorizado para realizar actividades de alto riesgo.</p></div>';return;}
+    const w=ps[0];
+    let empN="—";
+    try{const r2=await fetch(SUPA_URL+"/rest/v1/empresas?id=eq."+encodeURIComponent(w.emp_id||"")+"&select=razon_social",{headers:h});const es=await r2.json();if(es&&es[0])empN=es[0].razon_social||"—";}catch(e){}
+    let enP=false;
+    try{const r3=await fetch(SUPA_URL+"/rest/v1/accesos?pid=eq."+encodeURIComponent(pid)+"&salida=is.null&select=ingreso&order=ingreso.desc&limit=1",{headers:h});const ac=await r3.json();enP=ac&&ac.length>0;}catch(e){}
+    const auths=(typeof w.autorizaciones==="string"?JSON.parse(w.autorizaciones||"{}"):w.autorizaciones)||{};
+    const authList=AUTH_TODAS.filter(a=>auths[a.id]);
+    const sctrD=dias(w.sctr_vencimiento);
+    const sctrSt=!w.sctr_vencimiento?"none":sctrD<0?"vencido":sctrD<=30?"proximo":"vigente";
+    let indV=null;
+    if(w.induccion){const d=new Date(w.induccion);d.setFullYear(d.getFullYear()+1);indV=d.toISOString().split("T")[0];}
+    const indD=dias(indV);
+    const indSt=!indV?"none":indD<0?"vencido":indD<=30?"proximo":"vigente";
+    const bloq=w.bloqueado===true;
+    let stC="ok",stL="✅ Autorizado";
+    if(bloq||sctrSt==="vencido"||sctrSt==="none"||indSt==="vencido"||indSt==="none"){stC="bad";stL="⛔ No autorizado";}
+    else if(sctrSt==="proximo"||indSt==="proximo"){stC="warn";stL="⚠ Autorizado con alertas";}
+    const rows=authList.map(a=>{
+      const f=auths[a.id];const d=dias(f);
+      const s=d<0?"bad":d<=30?"warn":"ok";
+      const t=d<0?"Vencido":d<=30?"Por vencer":"Autorizado";
+      return`<tr><td class="hab-name">${a.icon} ${a.label}</td><td class="hab-date">${fmt(f)}</td><td><span class="hab-status ${s}">${t}</span></td></tr>`;
+    }).join("");
+    const sctrC={vigente:"ok",proximo:"warn",vencido:"bad",none:"bad"}[sctrSt];
+    const sctrT={vigente:"Vigente",proximo:"Por vencer",vencido:"Vencido",none:"Sin registro"}[sctrSt];
+    const indC={vigente:"ok",proximo:"warn",vencido:"bad",none:"bad"}[indSt];
+    const indT={vigente:"Vigente",proximo:"Por vencer",vencido:"Vencida",none:"Sin inducción"}[indSt];
+    el.innerHTML=`<div class="card">
+      <div class="person-name">${w.nombre}</div>
+      <div class="person-sub">${w.cargo||""} · ${w.id}</div>
+      <div><span class="status-badge ${stC}">${stL}</span></div>
+      ${authList.length?`<div class="hab-section"><table class="hab-table"><thead><tr><th>Habilitación</th><th>Válido hasta</th><th>Estatus</th></tr></thead><tbody>${rows}</tbody></table></div>`:`<p class="no-hab">No tiene habilitaciones registradas. No puede realizar actividades de alto riesgo.</p>`}
+      <div class="meta">
+        <div class="meta-item"><div class="meta-label">SCTR</div><div class="meta-val ${sctrC}">${sctrT}${w.sctr_vencimiento?" · "+fmt(w.sctr_vencimiento):""}</div></div>
+        <div class="meta-item"><div class="meta-label">Inducción</div><div class="meta-val ${indC}">${indT}${indV?" · "+fmt(indV):""}</div></div>
+        <div class="meta-item"><div class="meta-label">En planta</div><div class="meta-val ${enP?"ok":""}">${enP?"🟢 Sí":"⚪ No"}</div></div>
+        <div class="meta-item"><div class="meta-label">Empresa</div><div class="meta-val">${empN}</div></div>
+      </div>
+    </div>`;
+  }catch(err){el.innerHTML='<div class="card error-card"><div class="error-title">Error al consultar</div><p class="error-sub">No se pudo obtener la información.<br><small style="color:#aaa">'+err.message+'</small></p></div>';}
+}
+cargar();
+</script>
+</body>
+</html>
